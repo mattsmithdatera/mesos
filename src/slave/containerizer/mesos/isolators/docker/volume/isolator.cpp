@@ -65,16 +65,16 @@ Try<Isolator*> DockerVolumeIsolatorProcess::create(const Flags& flags)
     return Error("The 'docker/volume' isolator requires root permissions");
   }
 
-  // TODO(gyliu513): Check dvdcli version, the version need to be
-  // greater than or equal to 0.2.0.
-  Option<string> dvdcli = os::which("dvdcli");
-  if (dvdcli.isNone()) {
-    return Error("The 'docker/volume' isolator cannot get dvdcli command");
+  // TODO(_alastor_): Check curl version, the version need to be
+  // greater than or equal to 7.40
+  Option<string> curl = os::which("curl");
+  if (curl.isNone()) {
+    return Error("The 'docker/volume' isolator cannot get curl command");
   }
 
-  VLOG(1) << "Found 'dvdcli' at '" << dvdcli.get() << "'";
+  VLOG(1) << "Found 'curl' at '" << curl.get() << "'";
 
-  Try<Owned<DriverClient>> client = DriverClient::create(dvdcli.get());
+  Try<Owned<DriverClient>> client = DriverClient::create(curl.get());
   if (client.isError()) {
     return Error(
         "Unable to create docker volume driver client: " + client.error());
@@ -544,7 +544,7 @@ Future<Nothing> DockerVolumeIsolatorProcess::cleanup(
               << volume.driver() << "' and name '" << volume.name()
               << "' for container " << containerId;
 
-    // Invoke dvdcli client to unmount the docker volume.
+    // Invoke curl client to unmount the docker volume.
     futures.push_back(this->unmount(volume.driver(), volume.name()));
   }
 

@@ -51,9 +51,9 @@ constexpr Duration MOUNT_TIMEOUT = Seconds(120);
 constexpr Duration UNMOUNT_TIMEOUT = Seconds(120);
 
 Try<Owned<DriverClient>> DriverClient::create(
-    const std::string& dvdcli)
+    const std::string& curl)
 {
-  return Owned<DriverClient>(new DriverClient(dvdcli));
+  return Owned<DriverClient>(new DriverClient(curl));
 }
 
 
@@ -66,26 +66,38 @@ Future<string> DriverClient::mount(
   // TODO(gyliu513): Add `explicitcreate` if 'options' is None. Refer
   // to https://github.com/emccode/dvdcli/pull/20 for detail.
   vector<string> argv = {
-    dvdcli,
-    "mount",
-    "--volumedriver=" + driver,
-    "--volumename=" + name,
-  };
+    "curl",
+    "-v",
+    "-X",
+    "POST",
+    "-d"};
+
+  string body = "";
+
+  body += "'{\"Name\": \"" + name + "\"";
 
   foreachpair (const string& key, const string& value, options) {
-    argv.push_back("--volumeopts=" + key + "=" + value);
+    body += ", \"" + key + "\": \"" + value + "\",";
   }
+
+  body += "}'";
+
+  argv.push_back(body);
+  argv.push_back("--unix-socket");
+  argv.push_back(
+    "/run/docker/plugins/" + driver + ".sock");
+  argv.push_back("http://localhost/VolumeDriver.Mount");
 
   string command = strings::join(
       ", ",
-      dvdcli,
+      curl,
       strings::join(", ", argv));
 
-  VLOG(1) << "Invoking Docker Volume Driver 'mount' "
-          << "command '" << command << "'";
+  LOG(INFO) << "Invoking Docker Volume Driver 'mount' "
+            << "command '" << command << "'";
 
   Try<Subprocess> s = subprocess(
-      dvdcli,
+      curl,
       argv,
       Subprocess::PATH("/dev/null"),
       Subprocess::PIPE(),
@@ -156,22 +168,32 @@ Future<Nothing> DriverClient::unmount(
     const string& name)
 {
   vector<string> argv = {
-    dvdcli,
-    "unmount",
-    "--volumedriver=" + driver,
-    "--volumename=" + name,
-  };
+    "curl",
+    "-v",
+    "-X",
+    "POST",
+    "-d"};
+
+  string body = "";
+
+  body += "'{\"Name\": \"" + name + "\"}'";
+
+  argv.push_back(body);
+  argv.push_back("--unix-socket");
+  argv.push_back(
+    "/run/docker/plugins/" + driver + ".sock");
+  argv.push_back("http://localhost/VolumeDriver.Unmount");
 
   string command = strings::join(
       ", ",
-      dvdcli,
+      curl,
       strings::join(", ", argv));
 
-  VLOG(1) << "Invoking Docker Volume Driver 'unmount' "
-          << "command '" << command << "'";
+  LOG(INFO) << "Invoking Docker Volume Driver 'unmount' "
+            << "command '" << command << "'";
 
   Try<Subprocess> s = subprocess(
-      dvdcli,
+      curl,
       argv,
       Subprocess::PATH("/dev/null"),
       Subprocess::PIPE(),

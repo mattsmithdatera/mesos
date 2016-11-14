@@ -48,7 +48,7 @@ public:
    * Create a Docker Volume Driver Client.
    */
   static Try<process::Owned<DriverClient>> create(
-      const std::string& dvdcli);
+      const std::string& curl);
 
   virtual ~DriverClient() {}
 
@@ -73,10 +73,10 @@ protected:
   DriverClient() {} // For creating mock object.
 
 private:
-  DriverClient(const std::string& _dvdcli)
-    : dvdcli(_dvdcli) {}
+  DriverClient(const std::string& _curl)
+    : curl(_curl) {}
 
-  const std::string dvdcli;
+  const std::string curl;
 };
 
 } // namespace volume {
